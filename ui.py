@@ -1,21 +1,28 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 from tkinter.font import Font
 from datetime import date
 from openpyxl import load_workbook
 from openpyxl.utils import *
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
 import serial.tools.list_ports
 import serial
+import time
+import numpy as np
 
-#Crea Objeto de comunicacion serial (para conectar con Arduino), lo llamamos: ser
-ser = serial.Serial()
 
+#Crea Objeto de comunicacion self.serial (para conectar con Arduino), lo llamamos: self.ser
+ser = serial.Serial(baudrate=115200, timeout=2)
 #Creamos clase para Objeto que gemera y maneja la UI(Interfaz de Usuario) y funcionalidad
 class UI:
     #Inicializacion del objeto, requiere una hoja de excel como entrada, la llamamos: a
-    def __init__(self, master, a):
+    def __init__(self, master, a, ser):
         #crea objeto Tk y pone titulo a la ventana; asigna hoja de excel de la entrada a variable interna del Objeto
         self.sheet = a
+        self.ser = ser
         self.master = master
         self.master.title("Interfaz")
 
@@ -26,29 +33,32 @@ class UI:
         Top = LabelFrame(self.First, text="Lectura de sensores", bd=2)
         Top.grid(columnspan=5, padx=10, pady=15, ipadx=2, ipady=2)
 
-        #Crea Boton y Canvas que se usara como fondo para la grafica del sensor 1, los estructura dentro del grid y los define
+        fig = Figure(dpi= 50, facecolor='Black', constrained_layout=True)
+        t = np.arange(0, 15, 1)
+        s1 = fig.add_subplot(4, 1, 1, frameon=False).plot(t, [i for i in range(15)])
+        s2 = fig.add_subplot(4, 1, 2, frameon=False).plot(t, [i*i for i in range(15)])
+        s3 = fig.add_subplot(4, 1, 3, frameon=False).plot(t, [i for i in range(15)])
+        s4 = fig.add_subplot(4, 1, 4, frameon=False).plot(t, [i*i for i in range(15)])
+
+        cs1 = FigureCanvasTkAgg(fig, master=Top)  # A tk.DrawingArea.
+        cs1.draw()
+        cs1.get_tk_widget().grid(row=0, column=1, rowspan=4, sticky=E)
+
+        #Crea Boton que se usara como fondo para la grafica del sensor 1, los estructura dentro del grid y los define
         bs1 = Button(Top, text="Sensor 1", width=10, height=2,  highlightthickness=0,  command=self.master.destroy)
         bs1.grid(row=0, column=0, sticky=E, pady=4, padx=5)
-        cs1 = Canvas(Top, bg='black', width=300, height=40, highlightthickness=0)
-        cs1.grid(row=0, column=1,  columnspan=2, sticky=W, padx=5)
 
-        #Crea y define Boton y Canvas para el Sensor 2
+        #Crea y define Boton para el Sensor 2
         bs2 = Button(Top, text="Sensor 2", width=10, height=2, highlightthickness=0, command=self.master.destroy)
         bs2.grid(row=1, column=0, sticky=E, pady=4, padx=5)
-        cs2 = Canvas(Top, bg='black', width=300, height=40, highlightthickness=0)
-        cs2.grid(row=1, column=1,  columnspan=2, sticky=W, padx=5)
 
-        #Crea y define Boton y Canvas para el Sensor 3
+        #Crea y define Boton para el Sensor 3
         bs3 = Button(Top, text="Sensor 3", width=10, height=2, highlightthickness=0, command=self.master.destroy)
         bs3.grid(row=2, column=0, sticky=E, pady=4, padx=5)
-        cs3 = Canvas(Top, bg='black', width=300, height=40, highlightthickness=0)
-        cs3.grid(row=2, column=1,  columnspan=2, sticky=W, padx=5)
 
-        #Crea y define Boton y Canvas para el Sensor 4
+        #Crea y define Boton para el Sensor 4
         bs4 = Button(Top, text="Sensor 4", width=10, height=2, highlightthickness=0, command=self.master.destroy)
         bs4.grid(row=3, column=0, sticky=E, pady=4, padx=5)
-        cs4 = Canvas(Top, bg='black', width=300, height=40, highlightthickness=0)
-        cs4.grid(row=3, column=1,  columnspan=2, sticky=W, padx=5)
 
         #Crea y define texto y dropdown menu con los numeros
         lsample = Label(self.First, text="Tiempo de muestreo", highlightthickness=0)
@@ -151,42 +161,49 @@ class UI:
 
         #TODO: Agregar script para salvar informacion, cerrar y abrir nuevamente Obejeto excel
 
-    #Funcion para establecer comunicacion con Arduino usando el Objeto de Serial creado al inicio
+    #Funcion para establecer comunicacion con Arduino usando el Objeto de serial creado al inicio
     def readSerial(self):
         #Crea una lista de Python con el retorno de la funcion llamada (se declaro arriba), la llama ports
         ports = list(serial.tools.list_ports.comports())
-        #Itera por todos los posibles puertos Seriales que esten conectados a la computadora (lista ports)
+        #Itera por todos los posibles puertos seriales que esten conectados a la computadora (lista ports)
         for p in ports:
-            #Obtiene el nombre del dispositivo conectado al puerto que se esta iterando, lo nombra a
-            a=str(p.name)
             #Si el dispositivo tiene la palabra "Arduino" en la descripcion hace coneccion con ese puerto
             if "Arduino" in p.description:
-                ser.port=a
+                self.ser.port=p.name
                 try: 
-                    ser.open()
-                    print(ser.is_open)
+                    self.ser.open()
+                    #self.validateSerial()
                 except:
                     print("Puerto ocupado")
+                
+                self.validateSerial()
             else:
-                print("Dispositivo no encontrado")
+                print("Dispositivo no es Arduino")
             #TODO:Crear condicion para controlar en caso de que haya mas de un Arduino conectado
-    #Funcion para crear conexion y solicitar informacion a un Arduino conectado por Serial
+    #Funcion para crear conexion y solicitar informacion a un Arduino conectado por self.serial
     def requestData(self):
         #Llama funcion que crea conexion con un Arduino
         self.readSerial()
 
-        #TODO: Add function to request data from serial conecction (Arduino will need to have the serial client program loaded)
+        #TODO: Add function to request data from self.serial conecction (Arduino will need to have the self.serial client program loaded)
 
-        #Cierra conexion Serial
-        ser.close()
+        #Cierra conexion self.serial
+        self.ser.close()
 
-        #Valores provisionales, seran sustituidos por el 'todo' anterior
+        #Valores provisionales, self.seran sustituidos por el 'todo' anterior
         data = ['a', 'b', 'c', 'd']
         #Regresa los valores
         return data
 
-         
-
+    def validateSerial(self):  
+        self.ser.read()
+        self.ser.write(b'O')
+        data = self.ser.read(2).decode()
+        print(data)
+        if data == "K":
+            messagebox.showinfo("Coneccion creada!", "Se ha encontrado un Arduino.\nEl dispositivo fue autentificado satisfactoriamente")
+        self.ser.close()
+        
 
 root = Tk()
 s1 = IntVar()
@@ -207,5 +224,5 @@ wb = load_workbook(filename = 'hola.xlsx')
 sheet = wb.active
 
 
-gui = UI(root, sheet)
+gui = UI(root, sheet, ser)
 root.mainloop()
