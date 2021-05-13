@@ -175,11 +175,53 @@ class UI:
 
     #Funcion para establecer comunicacion con Arduino usando el Objeto de serial creado al inicio
     def connectSerial(self):
+        self.ConnectWindow = Toplevel(self.master, height=500, width= 500)
+        #Crea Label Frame para contener parte de las opciones
+        frame = LabelFrame(self.ConnectWindow, text="Puertos disponibles")
+        frame.grid(row=0, column=0, columnspan=3, sticky=N+S+E+W, padx=15, pady=10)
+
+        self.ser.close()
         #Crea una lista de Python con el retorno de la funcion llamada (se declaro arriba), la llama ports
         ports = list(serial.tools.list_ports.comports())
-       
+        self.items = StringVar()
+        self.portsDict = {x.description:x.name for x in ports}
+        self.items.set([x.description for x in ports])
+
+        self.list = Listbox(frame, listvariable=self.items, width=35)
+        self.list.grid(row=0, column=0, sticky=N+S+E+W, padx=15, pady=10)
+
+        
+        cncel = Button(self.ConnectWindow, text="Cancelar", width=10, height=2, command=self.ConnectWindow.destroy)
+        cncel.grid(row=1, column=0, padx=30, pady=10)
+        connect = Button(self.ConnectWindow, text="Connectar", width=10, height=2, command=self.Connect)
+        connect.grid(row=1, column=2, padx=30, pady=10)
+
+
+        self.ConnectWindow.grid()
+    
+    def Connect(self):
+
+        self.ser.port=self.portsDict[self.list.get(ACTIVE)]
+        
+        try:
+            self.ser.open()
+            if self.validateSerial() < 0:
+                self.ConnectWindow.destroy()
+                messagebox.showerror("Arduino no reconocido", "Mensaje de autentificacion incorrecto")
+                raise Exception("Arduino no validado") 
+            else:
+                messagebox.showinfo("Autentificacion satisfactoria","Mensaje de autentificacion validado correctamente")
+                self.threading()
+                self.ConnectWindow.destroy()
+        except:
+            print("Validacion fallida")
+
+
+        '''
         #Itera por todos los posibles puertos seriales que esten conectados a la computadora (lista ports)
         for p in ports:
+
+           
             print(p.description)
             #Si el dispositivo tiene la palabra "Arduino" en la descripcion hace coneccion con ese puerto
             if "Arduino" in p.description:
@@ -195,7 +237,7 @@ class UI:
                         break
                 except:
                     print("Validacion fallida")             
-
+'''
     #TODO:Crear condicion para controlar en caso de que haya mas de un Arduino conectado
     #Funcion para crear conexion y solicitar informacion a un Arduino conectado por self.serial
     def requestData(self):
@@ -205,7 +247,6 @@ class UI:
         #TODO: Add function to request data from self.serial conecction (Arduino will need to have the self.serial client program loaded)
         self.ser.read()
         self.ser.write(b'R')
-        time.sleep(0.3)
         answer = self.ser.read().decode()
         print(answer)
         if answer == 'E':            
@@ -215,9 +256,11 @@ class UI:
         return 0       
 
     def validateSerial(self):  
+        print("smn")
         self.ser.read()
         self.ser.write(b'O')
         data = self.ser.read().decode()
+        print(data)
         if data == 'K':
             return 1
         else:
@@ -240,12 +283,13 @@ class UI:
         self.sensor4 = [a.value for a in self.sheet['E'][-10:-1]]
         
         self.fig.clf()
+        print(self.sensor1)
 
-        self.s1 = self.fig.add_subplot(4, 1, 1, frameon=False).plot([x for x in range(len(self.sensor1))], self.sensor1)
-        self.s2 = self.fig.add_subplot(4, 1, 2, frameon=False).plot([x for x in range(len(self.sensor2))], self.sensor2)
-        self.s3 = self.fig.add_subplot(4, 1, 3, frameon=False).plot([x for x in range(len(self.sensor3))], self.sensor3)
+        self.s1 = self.fig.add_subplot(4, 1, 1, frameon=False).plot([x for x in range(len(self.sensor1))], self.sensor1, 'b')
+        self.s2 = self.fig.add_subplot(4, 1, 2, frameon=False).plot([x for x in range(len(self.sensor2))], self.sensor2, 'r')
+        self.s3 = self.fig.add_subplot(4, 1, 3, frameon=False).plot([x for x in range(len(self.sensor3))], self.sensor3, 'g')
         self.s4 = self.fig.add_subplot(4, 1, 4, frameon=False).plot([x for x in range(len(self.sensor4))], self.sensor4)
-
+      
         self.cs1.draw()
         self.cs1.get_tk_widget().grid(row=0, column=1, rowspan=4, sticky=E)
 
