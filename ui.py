@@ -42,6 +42,15 @@ class UI:
         self.cs1 = FigureCanvasTkAgg(self.fig, master=Top)
         self.cs1.draw()
         self.cs1.get_tk_widget().grid(row=0, column=1, rowspan=4, sticky=E)
+        #Crea y configura Labels para contener el valor actual.
+        self.sLabel1 = Label(Top, text="grados", font=("Verdana",14))
+        self.sLabel1.grid(row=0, column=3, sticky=E, pady=4, padx=5)
+        self.sLabel2 = Label(Top, text="grados", font=("Verdana",14))
+        self.sLabel2.grid(row=1, column=3, sticky=E, pady=4, padx=5)
+        self.sLabel3 = Label(Top, text="grados", font=("Verdana",14))
+        self.sLabel3.grid(row=2, column=3, sticky=E, pady=4, padx=5)
+        self.sLabel4 = Label(Top, text="grados", font=("Verdana",14))
+        self.sLabel4.grid(row=3, column=3, sticky=E, pady=4, padx=5)
         #Crea Etiquetas para identificar las graficas.
         ls1 = Label(Top, text="Sensor 1", font=("Verdana",18))
         ls1.grid(row=0, column=0, sticky=E, pady=4, padx=5)
@@ -64,12 +73,12 @@ class UI:
         lmin = Label(self.First, text="minutos", highlightthickness=0)
         lmin.grid(row=1, column=1)
         #Crea y define Botones de funciones y manda llamar sus respectivas subrutinas.
-        breport = Button(self.First, text="Reporte", width=10, height=2, command=self.readFile)
-        breport.grid(row=2, column=0, padx=10, pady=10)
-        bstop = Button(self.First, text="Detener", width=10, height=2, command=self.refresh)
-        bstop.grid(row=2, column=1, padx=20, pady=5)
+        breport = Button(self.First, text="Reporte", width=10, height=2, command=self.report)
+        breport.grid(row=2, column=0, padx=35, pady=10)
+        bstop = Button(self.First, text="Detener", width=10, height=2, command=self.readFile)
+        bstop.grid(row=2, column=1, padx=55, pady=5)
         bresume = Button(self.First, text="Continuar", width=10, height=2,command=self.connectSerial)
-        bresume.grid(row=2, column=2, padx=10, pady=5)
+        bresume.grid(row=2, column=2, padx=35, pady=5)
         #Asigna contenedor a la pantalla principal (default).
         self.First.grid()
 
@@ -213,13 +222,13 @@ class UI:
 
     #Funcion para pedir informacion al Arduino.
     def requestData(self):        
-        #Limpia buffer, manda solicitud; lee, decodifica y evalua respuesta, si es satiscatoria lee los datos y los envia.
+        #Limpia buffer, manda solicitud; lee y evalua respuesta, si es satiscatoria lee los datos y los regresa.
         self.ser.read()
         self.ser.write(b'R')
         answer = self.ser.read().decode()
         if answer == 'E':            
             data = [float(self.ser.readline().decode('UTF-8')[:-2]) for x in range(4)]
-            if data == 'Nan':
+            if 'nan' in data:
                 return 0
             return data
         return 0       
@@ -261,7 +270,11 @@ class UI:
         self.s4 = self.fig.add_subplot(4, 1, 4, frameon=False).plot([x for x in range(len(self.sensor4))], self.sensor4)
         self.cs1.draw()
         self.cs1.get_tk_widget().grid(row=0, column=1, rowspan=4, sticky=E)
-
+        #Actualiza valores en Labels.    
+        self.sLabel1['text'] = str(self.sensor1[-1])+"*"
+        self.sLabel2['text'] = str(self.sensor2[-1])+"*"
+        self.sLabel3['text'] = str(self.sensor3[-1])+"*"
+        self.sLabel4['text'] = str(self.sensor4[-1])+"*"
       
 
 root = Tk()
