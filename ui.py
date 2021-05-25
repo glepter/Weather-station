@@ -1,3 +1,4 @@
+from logging import disable
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
@@ -73,12 +74,12 @@ class UI:
         lmin = Label(self.First, text="minutos", highlightthickness=0)
         lmin.grid(row=1, column=1)
         #Crea y define Botones de funciones y manda llamar sus respectivas subrutinas.
-        breport = Button(self.First, text="Reporte", width=10, height=2, command=self.report)
-        breport.grid(row=2, column=0, padx=35, pady=10)
-        bstop = Button(self.First, text="Detener", width=10, height=2, command=self.readFile)
-        bstop.grid(row=2, column=1, padx=55, pady=5)
-        bresume = Button(self.First, text="Continuar", width=10, height=2,command=self.connectSerial)
-        bresume.grid(row=2, column=2, padx=35, pady=5)
+        self.breport = Button(self.First, text="Reporte", width=10, height=2, command= lambda : self.deactivate() & self.report())
+        self.breport.grid(row=2, column=0, padx=35, pady=10)
+        self.bstop = Button(self.First, text="Detener", width=10, height=2, command=self.ser.close())
+        self.bstop.grid(row=2, column=1, padx=55, pady=5)
+        self.bresume = Button(self.First, text="Continuar", width=10, height=2, command= lambda : self.deactivate() & self.connectSerial())
+        self.bresume.grid(row=2, column=2, padx=35, pady=5)
         #Asigna contenedor a la pantalla principal (default).
         self.First.grid()
 
@@ -144,9 +145,9 @@ class UI:
         sen4 = Checkbutton(frame, text = "Sensor 4", variable=s4)
         sen4.grid(row=3, column=3, padx=10, pady=10)
         #Crea y define Botones para cancelar o exportar reporte.
-        gen = Button(self.Second, text="Generar", width=10, height=2, command=self.Second.destroy)
+        gen = Button(self.Second, text="Generar", width=10, height=2, command= lambda : self.activate() & self.Second.destroy())
         gen.grid(row=2, column=0, padx=10, pady=10)
-        cancel = Button(self.Second, text="Cancelar", width=10, height=2, command=self.Second.destroy)
+        cancel = Button(self.Second, text="Cancelar", width=10, height=2, command= lambda : self.activate() & self.Second.destroy())
         cancel.grid(row=2, column=2, padx=20, pady=5)
         self.Second.grid()
 
@@ -172,6 +173,7 @@ class UI:
 
     #Funcion para establecer comunicacion con Arduino usando el Objeto de serial creado al inicio.
     def connectSerial(self):
+        
         #Crea Toplevel y Label Frame para contener parte de las opciones.
         self.ConnectWindow = Toplevel(self.master, height=500, width= 500)
         frame = LabelFrame(self.ConnectWindow, text="Puertos disponibles")
@@ -188,9 +190,9 @@ class UI:
         self.list.select_set(0)
         self.list.grid(row=0, column=0, sticky=N+S+E+W, padx=15, pady=10)
         #Crea Botones para controlar las funciones.
-        cncel = Button(self.ConnectWindow, text="Cancelar", width=10, height=2, command=self.ConnectWindow.destroy)
+        cncel = Button(self.ConnectWindow, text="Cancelar", width=10, height=2, command= lambda : self.activate() & self.ConnectWindow.destroy())
         cncel.grid(row=1, column=0, padx=30, pady=10)
-        connect = Button(self.ConnectWindow, text="Connectar", width=10, height=2, command=self.Connect)
+        connect = Button(self.ConnectWindow, text="Connectar", width=10, height=2, command= lambda : self.activate() & self.Connect())
         connect.grid(row=1, column=2, padx=30, pady=10)
         #Configura el Toplevel en la pantalla.
         self.ConnectWindow.grid()
@@ -211,13 +213,24 @@ class UI:
                 raise Exception("Arduino no validado") 
             else:
                 messagebox.showinfo("Autentificacion satisfactoria","Mensaje de autentificacion validado correctamente")
-                self.readFile()
                 self.ConnectWindow.destroy()
+                self.readFile()
         #De no poder abrir el puerto crea mensaje de alerta y cierra la ventana.
         except:
             messagebox.showerror("Puerto Serial no reconocido", "El puerto seleccionado no produce respuesta de autentificacion")
             self.ConnectWindow.destroy()
 
+
+    #Funcion para desactivar botones
+    def deactivate(self):
+        self.bresume['state'] = "disabled"
+        self.breport['state'] = "disabled"   
+
+
+    #Funcion para activar botones
+    def activate(self):
+        self.bresume['state'] = "normal"
+        self.breport['state'] = "normal"   
 
     #Funcion para pedir informacion al Arduino.
     def requestData(self):        
