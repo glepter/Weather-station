@@ -17,7 +17,7 @@ import numpy as np
 
 
 #Crea Objeto de comunicacion self.serial (para conectar con Arduino), lo llamamos: self.ser
-ser = serial.Serial(baudrate=115200, timeout=1)
+ser = serial.Serial(baudrate=115200, timeout=2)
 
 #Creamos clase para Objeto que genera y maneja la UI (Interfaz de Usuario) y su funcionalidad.
 class UI:
@@ -208,11 +208,10 @@ class UI:
             self.ser.open()
             if self.validateSerial() < 0:
                 self.ConnectWindow.destroy()
-                messagebox.showerror("Arduino no reconocido", "Mensaje de autentificacion incorrecto")
                 raise Exception("Arduino no validado") 
             else:
                 messagebox.showinfo("Autentificacion satisfactoria","Mensaje de autentificacion validado correctamente")
-                self.threading()
+                self.readFile()
                 self.ConnectWindow.destroy()
         #De no poder abrir el puerto crea mensaje de alerta y cierra la ventana.
         except:
@@ -223,12 +222,12 @@ class UI:
     #Funcion para pedir informacion al Arduino.
     def requestData(self):        
         #Limpia buffer, manda solicitud; lee y evalua respuesta, si es satiscatoria lee los datos y los regresa.
-        self.ser.read()
+        
         self.ser.write(b'R')
         answer = self.ser.read().decode()
         if answer == 'E':            
             data = [float(self.ser.readline().decode('UTF-8')[:-2]) for x in range(4)]
-            if 'nan' in data:
+            if "nan" in data:
                 return 0
             return data
         return 0       
@@ -236,21 +235,24 @@ class UI:
 
     #Funcion para pedir autorizacion.
     def validateSerial(self):
+        count = 0
         #Limpia buffer, manda solicitud; lee, decodifica y evalua respuesta, si es satiscatoria retorna positivo.
-        self.ser.read()
-        self.ser.write(b'O')
-        data = self.ser.read().decode()
-        print(data)
-        if data == 'K':
-            return 1
-        else:
-            return -1
+        while True:
+            ser.write(b'O')
+            data = ser.read().decode()
+            if data == 'K':
+                break
+            else:
+                if count >3:
+                    return -1
+                
+        return 1
     
 
     #Funcion para comenzar Hilo de espera.
     def threading(self):
         #Crea Hilo con la funcion esperando el valor del spinbox por una constante, inicia el hilo.
-        self.t1=Thread(target=self.master.after(int(self.spin.get())*1000, self.readFile))
+        self.t1=Thread(target=self.master.after(int(self.spin.get())*60000, self.readFile))
         self.t1.start()
 
 
