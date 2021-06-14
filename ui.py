@@ -1,3 +1,4 @@
+from ctypes import sizeof
 from logging import disable
 from tkinter import *
 from tkinter import ttk
@@ -10,6 +11,7 @@ from openpyxl.utils import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+from openpyxl.workbook.workbook import Workbook
 import serial.tools.list_ports
 import serial
 from threading import *
@@ -76,7 +78,7 @@ class UI:
         #Crea y define Botones de funciones y manda llamar sus respectivas subrutinas.
         self.breport = Button(self.First, text="Reporte", width=10, height=2, command= lambda : self.deactivate() & self.report())
         self.breport.grid(row=2, column=0, padx=35, pady=10)
-        self.bstop = Button(self.First, text="Detener", width=10, height=2, command=self.ser.close())
+        self.bstop = Button(self.First, text="Desconectar", width=10, height=2, command=self.ser.close())
         self.bstop.grid(row=2, column=1, padx=55, pady=5)
         self.bresume = Button(self.First, text="Continuar", width=10, height=2, command= lambda : self.deactivate() & self.connectSerial())
         self.bresume.grid(row=2, column=2, padx=35, pady=5)
@@ -122,35 +124,62 @@ class UI:
         alab = Label(frame, text="Año")
         alab.grid(row=0, column=3, pady=2, padx=10)
         #Crea y define menus tipo Dropdown de la primera seccion con los valores predeterminados calculados arriba.
-        fdia = Spinbox(frame, from_= 0, to = 31, wrap = True, width=4, textvariable=ddia, font=Font(family='Helvetica', size=9, weight='normal'))
-        fdia.grid(row=1, column=1, pady=5, padx=10)
-        fmes = Spinbox(frame, from_= 0, to = 12, wrap = True, width=4, textvariable=mmes, font=Font(family='Helvetica', size=9, weight='normal'))
-        fmes.grid(row=1, column=2, pady=5)
-        fanio = Spinbox(frame, from_= 2021, to = 2022, wrap = True, width=4, textvariable=anio, font=Font(family='Helvetica', size=9, weight='normal'))
-        fanio.grid(row=1, column=3, pady=5, padx=10)    
+        self.fdia = Spinbox(frame, from_= 0, to = 31, wrap = True, width=4, textvariable=ddia, font=Font(family='Helvetica', size=9, weight='normal'))
+        self.fdia.grid(row=1, column=1, pady=5, padx=10)
+        self.fmes = Spinbox(frame, from_= 0, to = 12, wrap = True, width=4, textvariable=mmes, font=Font(family='Helvetica', size=9, weight='normal'))
+        self.fmes.grid(row=1, column=2, pady=5)
+        self.fanio = Spinbox(frame, from_= 2021, to = 2022, wrap = True, width=4, textvariable=anio, font=Font(family='Helvetica', size=9, weight='normal'))
+        self.fanio.grid(row=1, column=3, pady=5, padx=10)    
         #Crea y define los menus de la segunda seccion.
-        sdia = Spinbox(frame, from_= 0, to = 31, wrap = True, width=4, textvariable=dia, font=Font(family='Helvetica', size=9, weight='normal'))
-        sdia.grid(row=2 , column=1, pady=5, padx=10)
-        smes = Spinbox(frame, from_= 0, to = 12, wrap = True, width=4, textvariable=mes, font=Font(family='Helvetica', size=9, weight='normal'))
-        smes.grid(row=2 , column=2, pady=5)
-        sanio = Spinbox(frame, from_= 2021, to = 2022, wrap = True, width=4, textvariable=anio, font=Font(family='Helvetica', size=9, weight='normal'))
-        sanio.grid(row=2 , column=3, pady=5, padx=10)
+        self.sdia = Spinbox(frame, from_= 0, to = 31, wrap = True, width=4, textvariable=dia, font=Font(family='Helvetica', size=9, weight='normal'))
+        self.sdia.grid(row=2 , column=1, pady=5, padx=10)
+        self.smes = Spinbox(frame, from_= 0, to = 12, wrap = True, width=4, textvariable=mes, font=Font(family='Helvetica', size=9, weight='normal'))
+        self.smes.grid(row=2 , column=2, pady=5)
+        self.sanio = Spinbox(frame, from_= 2021, to = 2022, wrap = True, width=4, textvariable=anio, font=Font(family='Helvetica', size=9, weight='normal'))
+        self.sanio.grid(row=2 , column=3, pady=5, padx=10)
         #Crea y define checkboxes para seleccionar que sensores seran incluidos en el reporte (todos por default).
-        sen1 = Checkbutton(frame, text = "Sensor 1", variable=s1)
-        sen1.grid(row=3, column=0, padx=10, pady=10)
-        sen2 = Checkbutton(frame, text = "Sensor 2", variable=s2)
-        sen2.grid(row=3, column=1, padx=10, pady=10)
-        sen3 = Checkbutton(frame, text = "Sensor 3", variable=s3)
-        sen3.grid(row=3, column=2, padx=10, pady=10)
-        sen4 = Checkbutton(frame, text = "Sensor 4", variable=s4)
-        sen4.grid(row=3, column=3, padx=10, pady=10)
+        self.sen1 = Checkbutton(frame, text = "Sensor 1", variable=s1)
+        self.sen1.grid(row=3, column=0, padx=10, pady=10)
+        self.sen2 = Checkbutton(frame, text = "Sensor 2", variable=s2)
+        self.sen2.grid(row=3, column=1, padx=10, pady=10)
+        self.sen3 = Checkbutton(frame, text = "Sensor 3", variable=s3)
+        self.sen3.grid(row=3, column=2, padx=10, pady=10)
+        self.sen4 = Checkbutton(frame, text = "Sensor 4", variable=s4)
+        self.sen4.grid(row=3, column=3, padx=10, pady=10)
         #Crea y define Botones para cancelar o exportar reporte.
-        gen = Button(self.Second, text="Generar", width=10, height=2, command= lambda : self.activate() & self.Second.destroy())
+        gen = Button(self.Second, text="Generar", width=10, height=2, command= lambda : self.generate() & self.Second.destroy())
         gen.grid(row=2, column=0, padx=10, pady=10)
         cancel = Button(self.Second, text="Cancelar", width=10, height=2, command= lambda : self.activate() & self.Second.destroy())
         cancel.grid(row=2, column=2, padx=20, pady=5)
         self.Second.grid()
 
+
+    #F
+    def generate(self):
+        self.activate()
+        repBook = Workbook()
+        currentSheet = repBook.active
+        for row in self.sheet.values:
+            if row[0] == "Tiempo":
+                currentSheet.append(["Tiempo", "Sensor 1" , "Sensor 2" , "Sensor 3" , "Sensor 4" ])
+            else:
+                a = row[0].split()[0].split('-')
+                print(self.fmes.get())
+                if int(a[0]) < int(self.fanio.get())-2000:
+                    pass
+                elif int(a[0]) > int(self.sanio.get())-2000:
+                    break
+                elif int(a[1]) < int(self.fmes.get()):
+                    pass                
+                elif int(a[1]) > int(self.smes.get()):
+                    break
+                elif int(a[2]) < int(self.fdia.get()):
+                    pass                
+                elif int(a[2]) > int(self.sdia.get()):
+                    break
+                else:
+                    currentSheet.append(row)
+        repBook.save("Reporte.xlsx")
 
     #Funcion para leer de la hoja de excel que se paso como argumento para el Objeto.
     def readFile(self):
