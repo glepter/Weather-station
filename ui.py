@@ -137,15 +137,6 @@ class UI:
         self.smes.grid(row=2 , column=2, pady=5)
         self.sanio = Spinbox(frame, from_= 2021, to = 2022, wrap = True, width=4, textvariable=anio, font=Font(family='Helvetica', size=9, weight='normal'))
         self.sanio.grid(row=2 , column=3, pady=5, padx=10)
-        #Crea y define checkboxes para seleccionar que sensores seran incluidos en el reporte (todos por default).
-        self.sen1 = Checkbutton(frame, text = "Sensor 1", variable=s1)
-        self.sen1.grid(row=3, column=0, padx=10, pady=10)
-        self.sen2 = Checkbutton(frame, text = "Sensor 2", variable=s2)
-        self.sen2.grid(row=3, column=1, padx=10, pady=10)
-        self.sen3 = Checkbutton(frame, text = "Sensor 3", variable=s3)
-        self.sen3.grid(row=3, column=2, padx=10, pady=10)
-        self.sen4 = Checkbutton(frame, text = "Sensor 4", variable=s4)
-        self.sen4.grid(row=3, column=3, padx=10, pady=10)
         #Crea y define Botones para cancelar o exportar reporte.
         gen = Button(self.Second, text="Generar", width=10, height=2, command= lambda : self.generate() & self.Second.destroy())
         gen.grid(row=2, column=0, padx=10, pady=10)
